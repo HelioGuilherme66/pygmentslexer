@@ -6,6 +6,8 @@ for `Robot Framework <http://robotframework.org>`_ test data in plain
 text format. It is available as a separate plugin and *included in
 Pygments 1.6 and newer*.
 
+This version will be available not before 
+
 What is Pygments
 ----------------
 
@@ -56,6 +58,20 @@ See `generate.py <https://github.com/robotframework/pygmentslexer/blob/master/ge
 script for an example of the programmatic usage. For general information about
 using Pygments, consult `its documentation <http://pygments.org/docs/>`_ and/or
 the documentation of the tool you are using it with.
+
+Alternative Usage
+-----------------
+
+You can use ``robotframeworklexer.py`` as a custom lexer in ``pygments``. See the documentation
+of ``pygments`` for more information. Below, are two examples applied to the test suite `example.robot <file:///./example.robot>`_.
+
+.. code:: bash
+
+   python -m pygments -l ./robotframeworklexer.py:RobotFrameworkLexer -x -o example.png -f png ./example.robot 
+   # result: `<file:///./example.png>`_
+   
+   python -m pygments -l ./robotframeworklexer.py:RobotFrameworkLexer -x -o example.txt -f raw ./example.robot 
+   # result: `<file:///./example.txt>`_
 
 License
 -------
