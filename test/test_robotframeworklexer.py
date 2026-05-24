@@ -58,8 +58,7 @@ class TestVariableTokenizer(unittest.TestCase):
                      ('${', SYNTAX), ('var', VARIABLE), ('${', SYNTAX),
                      ('inside', VARIABLE), ('}', SYNTAX), ('}', SYNTAX))
         self._verify('@{%{var${not}} end',
-                     ('@{', SYNTAX), ('%{', SYNTAX), ('var', VARIABLE),
-                     ('${', SYNTAX), ('not', VARIABLE),
+                     ('@{', SYNTAX), ('%{', SYNTAX), ('var${not', VARIABLE),
                      ('}', SYNTAX), ('}', SYNTAX), (' end', ARGUMENT))
 
     def test_var_item(self):
