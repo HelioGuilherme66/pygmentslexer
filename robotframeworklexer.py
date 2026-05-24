@@ -506,7 +506,7 @@ class VariableSplitter:
                 self._state(char, index)
             except StopIteration:
                 return
-            if index  == max_index and not self._scanning_list_variable_index():
+            if index == max_index and not self._scanning_list_variable_index():
                 return
 
     def _scanning_list_variable_index(self):
