@@ -175,7 +175,7 @@ class TestForLoopTokenizer(unittest.TestCase):
     def test_old_for(self):
         SEP = (SYNTAX, '    ')
         self._verify(': FOR    ${x}    IN    foo    bar',
-                     (SYNTAX, ': FOR'), SEP,
+                     (ERROR, ': FOR'), SEP,
                      (SYNTAX, '${'), (VARIABLE, 'x'), (SYNTAX, '}'), SEP,
                      (CONTROL, 'IN'), SEP,
                      (ARGUMENT, 'foo'), SEP, (ARGUMENT, 'bar'))

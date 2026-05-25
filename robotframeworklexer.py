@@ -36,6 +36,10 @@ SYNTAX = Token.Punctuation
 GHERKIN = Token.Generic.Emph
 ERROR = Token.Error
 
+CONTROLS = ('AND', 'BREAK', 'CONTINUE', 'ELSE', 'ELSE IF', 'END', 'EXCEPT',
+            'FINALLY', 'GROUP', 'IF', 'IN', 'IN ENUMERATE', 'IN RANGE',
+            'IN ZIP', 'RETURN', 'TRY', 'VAR', 'WHILE')
+
 
 def normalize(string, remove='', strip=True):
     string = string.lower()
@@ -45,10 +49,7 @@ def normalize(string, remove='', strip=True):
     return string if not strip else string.strip()
 
 def is_control(value):
-    return value in ('AND', 'ELSE', 'ELSE IF', 'END', 'EXCEPT', 'FINALLY', 'FOR', 'GROUP',
-                     'IF', 'IN', 'IN ENUMERATE', 'IN RANGE', 'IN ZIP',
-                     'RETURN', 'TRY', 'VAR', 'WHILE')
-
+    return value in CONTROLS
 
 class RobotFrameworkLexer(Lexer):
     """
@@ -58,7 +59,7 @@ class RobotFrameworkLexer(Lexer):
     """
     name = 'RobotFramework'
     url = 'http://robotframework.org'
-    aliases = ['RobotFramework', 'robotframework']
+    aliases = ['robotframework']
     filenames = ['*.robot', '*.resource']
     mimetypes = ['text/x-robotframework']
 
@@ -86,10 +87,8 @@ class VariableTokenizer:
         if var.start < 0 or token in (COMMENT, ERROR):
             yield string, token
             return
-        print(f"DEBUG: VariableTokenizer tokenize BEFORE {var=} {string=}")
         for value, token in self._tokenize(var, string, token):
             if value:
-                print(f"DEBUG: VariableTokenizer tokenize YIELD {value=} {token=}")
                 yield value, token
 
     def _tokenize(self, var, string, orig_token):
@@ -150,6 +149,8 @@ class RowTokenizer:
         elif heading:
             token = HEADING if self._in_valid_table() else ERROR
             yield value, token
+        elif is_control(value):
+            yield value, CONTROL
         else:
             yield from self._table.tokenize(value, index)
 
@@ -278,7 +279,8 @@ class KeywordCall(Tokenizer):
 
     def __init__(self, support_assign=True):
         Tokenizer.__init__(self)
-        self._keyword_found = self._control_found = not support_assign
+        self._keyword_found = not support_assign
+        self._control_found = False
         self._assigns = 0
 
     def _tokenize(self, value, index):
@@ -286,12 +288,15 @@ class KeywordCall(Tokenizer):
             self._assigns += 1
             return SYNTAX  # VariableTokenizer tokenizes this later.
         if self._keyword_found or self._control_found:
-            self._tokens = (KEYWORD, ARGUMENT) if not self._control_found else (CONTROL, ARGUMENT)
+            if not is_control(value):
+                self._tokens = (KEYWORD, ARGUMENT)
+            else:
+                self._tokens = (CONTROL, ARGUMENT)
             return Tokenizer._tokenize(self, value, index - self._assigns)
         self._control_found = is_control(value)
         if self._control_found:
             self._tokens = (CONTROL, ARGUMENT)
-        self._keyword_found = True if not self._control_found else False
+        self._keyword_found = not self._control_found
         return GherkinTokenizer().tokenize(value, self._tokens[0])
 
 
@@ -318,18 +323,25 @@ class ForLoop(Tokenizer):
 
     def _tokenize(self, value, index):
         token = self._in_arguments and ARGUMENT or SYNTAX
+        print(f"DEBUG: ForLoop _tokenize ENTER {value=} {index=} {token=}")
         if value in ('FOR', 'IN', 'IN ENUMERATE', 'IN RANGE', 'IN ZIP'):  # value must be in all caps
             self._in_arguments = value != 'FOR'
             token = CONTROL
-        elif value in ('for', 'in', 'in enumerate', 'in range', 'in zip'):
+        elif index == 0 and value in (': FOR', 'for'):
+            self._in_arguments = True
+            token = ERROR
+        elif index > 1 and value in ('in', 'in enumerate', 'in range', 'in zip'):
             self._in_arguments = True
             token = ERROR
         elif index >= 1 and not self._in_arguments:
-             var = list(VariableTokenizer().tokenize(value, ARGUMENT))
-             if len(var) > 1  and var[1][1] == VARIABLE:
-                 token = SYNTAX
-             else:
-                 token = ERROR
+            var = list(VariableTokenizer().tokenize(value, ARGUMENT))
+            print(f"DEBUG: ForLoop _tokenize VAR LOOP {value=} {index=}  {var=}")
+            if len(var) > 1  and var[1][1] == VARIABLE:
+                token = SYNTAX
+            else:
+                self._in_arguments = True
+                token = ARGUMENT
+        print(f"DEBUG: ForLoop _tokenize RETURN {value=} {index=} {token=} {self._in_arguments=}")
         return token
 
 
