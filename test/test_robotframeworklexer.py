@@ -8,7 +8,6 @@ class TestVariableTokenizer(unittest.TestCase):
     def _verify(self, string, *expected):
         tokenizer = VariableTokenizer()
         actual = list(tokenizer.tokenize(string, ARGUMENT))
-        print(f"DEBUG: TestVariableTokenizer _verify {actual=} {expected=}")
         self.assertEqual(len(actual), len(expected))
         for act, exp in zip(actual, expected):
             self.assertEqual(act, exp)
@@ -222,10 +221,7 @@ class TestControlMarkers(unittest.TestCase):
                     (SYNTAX, '\n'),
                     (SYNTAX, '    ')] + list(expected) + [(SYNTAX, '\n')]
         self.assertEqual(len(actual), len(expected))
-        # counter = 0
         for act, exp in zip(actual, expected):
-            # print(f"DEBUG: {counter=} {act=}_{exp=}")
-            # counter += 1
             self.assertEqual(act, exp)
 
     def _tokenize(self, string):
