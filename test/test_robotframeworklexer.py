@@ -210,6 +210,52 @@ class TestForLoopTokenizer(unittest.TestCase):
                      SEP, (CONTROL, 'END'))
 
 
+class TestControlMarkers(unittest.TestCase):
+
+    def _verify(self, block, *expected):
+        block = '\n'.join('    '+ line for line in block.splitlines())
+        test = '*** Test Cases ***\nMiscellaneous\n' + block
+        actual = list(RobotFrameworkLexer().get_tokens(test))
+        expected = [(HEADING, '*** Test Cases ***'),
+                    (SYNTAX, '\n'),
+                    (TC_KW_NAME, 'Miscellaneous'),
+                    (SYNTAX, '\n'),
+                    (SYNTAX, '    ')] + list(expected) + [(SYNTAX, '\n')]
+        self.assertEqual(len(actual), len(expected))
+        # counter = 0
+        for act, exp in zip(actual, expected):
+            # print(f"DEBUG: {counter=} {act=}_{exp=}")
+            # counter += 1
+            self.assertEqual(act, exp)
+
+    def _tokenize(self, string):
+        tokenizer = RowTokenizer()  # KeywordCall()
+        for item in string.split():
+            yield tokenizer.tokenize(item)
+
+    def test_while_in(self):
+        SEP = (SYNTAX, '    ')
+        self._verify('WHILE    ${x}    IN    @{values}',
+                     (CONTROL, 'WHILE'), SEP,
+                     (SYNTAX, '${'), (VARIABLE, 'x'), (SYNTAX, '}'), SEP,
+                     (CONTROL, 'IN'), SEP,
+                     (SYNTAX, '@{'), (VARIABLE, 'values'), (SYNTAX, '}'))
+
+    def test_while_continue(self):
+        SEP = (SYNTAX, '    ')
+        SEP2 = (SYNTAX, '        ')
+        NEWLINE = (SYNTAX, '\n')
+        self._verify('''WHILE    ${x} % 3 != 0\n    IF    ${x} < 11\n    VAR    ${x}    ${x+1}\n'''
+                     '''    ELSE\n    CONTINUE\nEND\nEND''',
+                     (CONTROL, 'WHILE'), SEP,
+                     (SYNTAX, '${'), (VARIABLE, 'x'), (SYNTAX, '}'), (KEYWORD, ' % 3 != 0'), NEWLINE,
+                     SEP2, (CONTROL, 'IF'), SEP, (SYNTAX, '${'), (VARIABLE, 'x'), (SYNTAX, '}'), (KEYWORD, ' < 11'),
+                     NEWLINE, SEP2, (CONTROL, 'VAR'), SEP, (SYNTAX, '${'), (VARIABLE, 'x'), (SYNTAX, '}'), SEP,
+                     (SYNTAX, '${'), (VARIABLE, 'x+1'), (SYNTAX, '}'), NEWLINE, SEP2, (CONTROL, 'ELSE'),
+                     NEWLINE, SEP2, (CONTROL, 'CONTINUE'), NEWLINE, SEP, (CONTROL, 'END'), NEWLINE, SEP,
+                     (CONTROL, 'END'))
+
+
 class TestTrailingSpaces(unittest.TestCase):
 
     def _verify(self, text, *expected):

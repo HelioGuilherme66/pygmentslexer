@@ -36,9 +36,9 @@ SYNTAX = Token.Punctuation
 GHERKIN = Token.Generic.Emph
 ERROR = Token.Error
 
+FORSEP = ('IN', 'IN ENUMERATE', 'IN RANGE', 'IN ZIP')
 CONTROLS = ('AND', 'BREAK', 'CONTINUE', 'ELSE', 'ELSE IF', 'END', 'EXCEPT',
-            'FINALLY', 'GROUP', 'IF', 'IN', 'IN ENUMERATE', 'IN RANGE',
-            'IN ZIP', 'RETURN', 'TRY', 'VAR', 'WHILE')
+            'FINALLY', 'GROUP', 'IF', FORSEP[:], 'RETURN', 'TRY', 'VAR', 'WHILE')
 
 
 def normalize(string, remove='', strip=True):
@@ -49,7 +49,7 @@ def normalize(string, remove='', strip=True):
     return string if not strip else string.strip()
 
 def is_control(value):
-    return value in CONTROLS
+    return value in CONTROLS and value not in FORSEP
 
 class RobotFrameworkLexer(Lexer):
     """
@@ -293,7 +293,7 @@ class KeywordCall(Tokenizer):
             else:
                 self._tokens = (CONTROL, ARGUMENT)
             return Tokenizer._tokenize(self, value, index - self._assigns)
-        self._control_found = is_control(value)
+        self._control_found = is_control(value) or value in FORSEP
         if self._control_found:
             self._tokens = (CONTROL, ARGUMENT)
         self._keyword_found = not self._control_found
@@ -323,25 +323,21 @@ class ForLoop(Tokenizer):
 
     def _tokenize(self, value, index):
         token = self._in_arguments and ARGUMENT or SYNTAX
-        print(f"DEBUG: ForLoop _tokenize ENTER {value=} {index=} {token=}")
         if value in ('FOR', 'IN', 'IN ENUMERATE', 'IN RANGE', 'IN ZIP'):  # value must be in all caps
             self._in_arguments = value != 'FOR'
             token = CONTROL
-        elif index == 0 and value in (': FOR', 'for'):
-            self._in_arguments = True
-            token = ERROR
-        elif index > 1 and value in ('in', 'in enumerate', 'in range', 'in zip'):
+        elif (index == 0 and value in (': FOR', 'for') or
+              index > 1 and value in ('in', 'in enumerate', 'in range', 'in zip')):
             self._in_arguments = True
             token = ERROR
         elif index >= 1 and not self._in_arguments:
             var = list(VariableTokenizer().tokenize(value, ARGUMENT))
-            print(f"DEBUG: ForLoop _tokenize VAR LOOP {value=} {index=}  {var=}")
             if len(var) > 1  and var[1][1] == VARIABLE:
                 token = SYNTAX
+            elif var[0][1] == ARGUMENT:
+                token = ERROR
             else:
-                self._in_arguments = True
                 token = ARGUMENT
-        print(f"DEBUG: ForLoop _tokenize RETURN {value=} {index=} {token=} {self._in_arguments=}")
         return token
 
 
